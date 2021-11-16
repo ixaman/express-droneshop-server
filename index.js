@@ -39,6 +39,27 @@ async function run(){
             const result = await productsCollection.insertOne(product);
             res.json(result)
         })
+
+
+        // DELETE PRODUCT API
+        app.delete('/products/:id', async(req, res)=> {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await productsCollection.deleteOne(query);
+            res.json(result)
+        })
+
+
+        // GET SINGLE PRODUCT API
+        app.get('/products/:id', async(req, res)=>{
+            const id = req.params.id;
+            const query = { _id: ObjectId(id)};
+            const product = await productsCollection.findOne(query);
+            res.json(product);
+        })
+
+
+
         //Review POST API
         app.post('/reviews', async(req, res) => {
             const review = req.body;
@@ -50,22 +71,29 @@ async function run(){
         app.get('/reviews', async(req, res) => {
             const cursor = reviewsCollections.find({});
             const reviews = await cursor.toArray();
-            res.send(products);
+            res.send(reviews);
         })
 
-        // GET SINGLE PRODUCT API
-        app.get('/products/:id', async(req, res)=>{
-            const id = req.params.id;
-            const query = { _id: ObjectId(id)};
-            const product = await productsCollection.findOne(query);
-            res.json(product);
-        })
 
          // ORDER POST API
          app.post("/order", async(req, res)=> {
             const data = req.body;
             const result = await ordersCollection.insertOne(data);
             res.json(result);
+        })
+
+          // UPDATE STATUS API
+          app.put('/orders/:id', async(req, res) =>{
+            const id = req.params.id;
+            const orderStatus = req.body;
+            const filter = { _id: ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    status: orderStatus.status
+                },
+            };
+            const result = await ordersCollection.updateOne(filter, updateDoc)
+            res.json(result)
         })
 
 
@@ -78,21 +106,7 @@ async function run(){
           });
 
 
-        //   USER GET API TO CHECK ADMIN OR NOT
-
-        app.get("/users/:email", async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email };
-            const user = await usersCollections.findOne(query);
-            let isAdmin = false;
       
-            if (user?.role === "admin") {
-              isAdmin = true;
-            }
-            res.json({ admin: isAdmin });
-          });
-
-
         // USER PUT API
 
           app.put("/users", async (req, res) => {
@@ -109,25 +123,28 @@ async function run(){
           });
 
 
-        //   PUT TO MAKING ADMIN
+            //   USER GET API TO CHECK ADMIN OR NOT
+
+        app.get("/users/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersCollections.findOne(query);
+            let isAdmin = false;
+      
+            if (user?.role === "admin") {
+              isAdmin = true;
+            }
+            res.json({ admin: isAdmin });
+          });
+
+
+            //   PUT TO MAKING ADMIN
         app.put("/users/admin", async (req, res) => {
             const user = req.body;
-            const requester = req.decodedEmail;
-            if (requester) {
-              const requesterAccount = await usersCollections.findOne({
-                email: requester,
-              });
-              if (requesterAccount.role === "admin") {
-                const filter = { email: user.email };
-                const updateDoc = { $set: { role: "admin" } };
-                const result = await usersCollections.updateOne(filter, updateDoc);
-                res.json(result);
-              }
-            } else {
-              res
-                .status(403)
-                .json({ message: "You do not have access to make admin" });
-            }
+            const filter = { email: user.email };
+            const updateDoc = { $set: { role: "admin" } };
+            const result = await usersCollections.updateOne(filter, updateDoc);
+            res.json(result)
           });
 
           //GET ORDERS API
